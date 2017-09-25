@@ -27,10 +27,10 @@ var docClient = new aws.DynamoDB.DocumentClient({ service: dynamodb });
     SubscribeTopic: 'EVENT:MQTTClient Subscribe TOPICNAME:',
     PublishInIp: 'EVENT:PublishEvent MESSAGE: IpAddress:',
     PublishOutIp: 'EVENT:PublishOut MESSAGE: IpAddress:',
-    SubscribeIp: 'EVENT:MQTTClient Subscribe TOPICNAME:'
+    SubscribeIp: 'EVENT:MQTTClient Subscribe MESSAGE: IpAddress:'
   };
 
-var connInfoSearchPatterns = ['%s %s', 'TRACEID:%s', 'PRINCIPALID:%s', 'IpAddress: %s ', 'SourcePort: %s'];
+var connInfoSearchPatterns = ['%s %s', 'PRINCIPALID:%s', 'IpAddress: %s ', 'SourcePort: %s'];
 var topicSearchPattern = 'TOPICNAME:%s ';
 
 // var infoThisFile = []; // Clear array of Connections collected from last file
@@ -120,12 +120,14 @@ function getAndPutConnection(eventInfo)
   // }
 
   var recordContents = eventInfo.Contents;
-
-  if ((recordContents === 'ConnInfo') || (recordContents === 'PubIp') || (recordContents === 'SubscribeIp'))
+  console.log('recordContents: ', recordContents);
+  if (recordContents === 'ConnInfo')
   {
-    PrincipalID = eventInfo.ConnInfo[2];
-    (eventInfo.ConnInfo[3]) ? (IpAddress = eventInfo.ConnInfo[3]) : (IpAddress = ' ');
-    var Status = eventInfo.ConnInfo[5];
+    PrincipalID = eventInfo.ConnInfo[1];
+
+    console.log('IpAddress: ', eventInfo.ConnInfo[2]);
+    IpAddress = eventInfo.ConnInfo[2];
+    var Status = eventInfo.ConnInfo[4];
     var LastConnDisconn = eventInfo.ConnInfo[0][0] + ' ' + eventInfo.ConnInfo[0][1];
 
     dBaseGetParams.Key = { 'PrincipalID': PrincipalID };
@@ -145,17 +147,43 @@ function getAndPutConnection(eventInfo)
     }
   }
 
+ if ((recordContents === 'PubIp') || (recordContents === 'SubscribeIp'))
+ {
+   PrincipalID = eventInfo.ConnInfo[1];
+
+   console.log('IpAddress: ', eventInfo.ConnInfo[2]);
+   IpAddress = eventInfo.ConnInfo[2];
+   // var Status = eventInfo.ConnInfo[5];
+   // var LastConnDisconn = eventInfo.ConnInfo[0][0] + ' ' + eventInfo.ConnInfo[0][1];
+
+   dBaseGetParams.Key = { 'PrincipalID': PrincipalID };
+
+   dBasePutParams.Item =
+   {
+     'PrincipalID': PrincipalID,
+     'LastIpAddress': IpAddress
+    //  'CurrentStatus': Status, //Connected or Disconnected
+    //  'LastConnDisconnTime': LastConnDisconn // Concatenating Date and Time
+    //  'TotalNumConnections': 0, // Placeholder
+     // 'TotalNumDisconnections': 0, // Placeholder
+     // 'PubInTopic': ' ', // Placeholder
+     // 'PubInTopicNumMsgs': 0, // Placeholder
+     // 'PubOutTopic': ' ', // Placeholder
+     // 'PubOutTopicNumMsgs': 0 // Placeholder
+   }
+ }
+
   if (recordContents === 'SubscribeTopic')
   {
     var SubscribeTopicInfo = eventInfo.TopicName;
-    PrincipalID = eventInfo.TopicSubscriber[2];
-    (eventInfo.TopicSubscriber[3]) ? (IpAddress = eventInfo.TopicSubscriber[3]) : (IpAddress = ' ');
+    PrincipalID = eventInfo.TopicSubscriber[1];
+    IpAddress = eventInfo.TopicSubscriber[2];
     // Normally, if a topic is being written, then we
     // should consider the device to be Connected.
     // However in this case we are ONLY considering
     // a device conneted when the following is received:
     // "Connect Status: SUCCESS"
-    Status = eventInfo.TopicSubscriber[5];
+    Status = eventInfo.TopicSubscriber[4];
     // LastConnDisconn = currentRecord.TopicSubscriber[0][0] + ' ' + currentRecord.TopicSubscriber[0][1];
 
     dBaseGetParams.Key = { 'PrincipalID': PrincipalID };
@@ -172,14 +200,14 @@ function getAndPutConnection(eventInfo)
   if (recordContents === 'PubInTopic')
   {
     var PubInTopicInfo = eventInfo.TopicName;
-    PrincipalID = eventInfo.TopicSubscriber[2];
-    (eventInfo.TopicSubscriber[3]) ? (IpAddress = eventInfo.TopicSubscriber[3]) : (IpAddress = ' ');
+    PrincipalID = eventInfo.TopicSubscriber[1];
+    IpAddress = eventInfo.TopicSubscriber[2];
     // Normally, if a topic is being written, then we
     // should consider the device to be Connected.
     // However in this case we are ONLY considering
     // a device conneted when the following is received:
     // "Connect Status: SUCCESS"
-    Status = eventInfo.TopicSubscriber[5];
+    Status = eventInfo.TopicSubscriber[4];
     // LastConnDisconn = currentRecord.TopicSubscriber[0][0] + ' ' + currentRecord.TopicSubscriber[0][1];
     //PubInTopicInfo = `${PubInTopicName}`; // Use Template string to create field name rather than field value.
 
@@ -197,14 +225,14 @@ function getAndPutConnection(eventInfo)
   if (recordContents === 'PubOutTopic')
   {
     var PubOutTopicInfo = eventInfo.TopicName;
-    PrincipalID = eventInfo.TopicSubscriber[2];
-    (eventInfo.TopicSubscriber[3]) ? (IpAddress = eventInfo.TopicSubscriber[3]) : (IpAddress = ' ');
+    PrincipalID = eventInfo.TopicSubscriber[1];
+    IpAddress = eventInfo.TopicSubscriber[2];
     // Normally, if a topic is being written, then we
     // should consider the device to be Connected.
     // However in this case we are ONLY considering
     // a device conneted when the following is received:
     // "Connect Status: SUCCESS"
-    Status = eventInfo.TopicSubscriber[5];
+    Status = eventInfo.TopicSubscriber[4];
     // LastConnDisconn = currentRecord.TopicSubscriber[0][0] + ' ' + currentRecord.TopicSubscriber[0][1];
     //PubOutTopicInfo = `${PubOutTopicName}`; // Use Template string to create field name rather than field value.
 
@@ -393,6 +421,11 @@ function getAndPutConnection(eventInfo)
         if ((dBasePutParams.Item[PubOutTopicInfo]['#PubOutMsgs'] === NaN) || (dBasePutParams.Item[PubOutTopicInfo]['#PubOutMsgs'] === undefined))
         dBasePutParams.Item[PubOutTopicInfo]['#PubOutMsgs'] = 0;
         (dBasePutParams.Item[PubOutTopicInfo]['#PubOutMsgs'])++;
+      }
+
+      else if ((recordContents === 'PubIp') || (recordContents === 'SubscribeIp'))
+      {
+        dBasePutParams.Item.LastIpAddress = IpAddress;
       }
 
       // Missing fields from readRecord are the ones added using dBasePutParams

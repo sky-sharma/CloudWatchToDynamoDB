@@ -61,6 +61,7 @@ module.exports.parseEvent = (eventStr, searchStrings, connInfoSearchPatterns, to
     }
     else if(eventStr.indexOf(searchStrings.PublishInIp) > -1)
     {
+      console.log('PublishInIp!');
       connectionInfo = parseConnectionInfo(eventStr, connInfoSearchPatterns);
       // connectionInfoPlusStatus.push('Disconnected');
       // connectionInfoPlusStatus.push(numConnections);
