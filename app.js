@@ -22,9 +22,12 @@ var docClient = new aws.DynamoDB.DocumentClient({ service: dynamodb });
   {
     Connection: 'EVENT:MQTT Client Connect MESSAGE: IpAddress:',
     Disconnection: 'EVENT:MQTT Client Disconnect MESSAGE: IpAddress:',
-    PublishIn: 'EVENT:PublishEvent TOPICNAME:',
-    PublishOut: 'EVENT:PublishOut TOPICNAME:',
-    Subscribe: 'EVENT:MQTTClient Subscribe TOPICNAME:'
+    PublishInTopic: 'EVENT:PublishEvent TOPICNAME:',
+    PublishOutTopic: 'EVENT:PublishOut TOPICNAME:',
+    SubscribeTopic: 'EVENT:MQTTClient Subscribe TOPICNAME:',
+    PublishInIp: 'EVENT:PublishEvent MESSAGE: IpAddress:',
+    PublishOutIp: 'EVENT:PublishOut MESSAGE: IpAddress:',
+    SubscribeIp: 'EVENT:MQTTClient Subscribe TOPICNAME:'
   };
 
 var connInfoSearchPatterns = ['%s %s', 'TRACEID:%s', 'PRINCIPALID:%s', 'IpAddress: %s ', 'SourcePort: %s'];
@@ -37,6 +40,7 @@ var PrincipalID; // dBase Key field
 var PubInTopicInfo = '';
 var PubOutTopicInfo = '';
 var SubscribeTopicInfo = '';
+var IpAddress = '';
 
 // Next few lines to decode base64 encoding of "event" argument of exports.handler
 var payload = new Buffer(event.awslogs.data, 'base64');
@@ -46,7 +50,9 @@ zlib.gunzip(payload, (err, result) => {
   {
     eventResult = JSON.parse(result.toString('ascii'));
     eventStr = eventResult.logEvents[0].message; // message is the part of the event JSON object that we want to parse
+    // console.log('eventStr: ', eventStr);
     eventInfo = utils.parseEvent(eventStr, searchStrings, connInfoSearchPatterns, topicSearchPattern);
+    // console.log('eventInfo: ', eventInfo);
     getAndPutConnection(eventInfo);
   }
 })
@@ -115,10 +121,10 @@ function getAndPutConnection(eventInfo)
 
   var recordContents = eventInfo.Contents;
 
-  if (recordContents === 'ConnInfo')
+  if ((recordContents === 'ConnInfo') || (recordContents === 'PubIp') || (recordContents === 'SubscribeIp'))
   {
     PrincipalID = eventInfo.ConnInfo[2];
-    var IpAddress = eventInfo.ConnInfo[3];
+    (eventInfo.ConnInfo[3]) ? (IpAddress = eventInfo.ConnInfo[3]) : (IpAddress = ' ');
     var Status = eventInfo.ConnInfo[5];
     var LastConnDisconn = eventInfo.ConnInfo[0][0] + ' ' + eventInfo.ConnInfo[0][1];
 
@@ -143,7 +149,7 @@ function getAndPutConnection(eventInfo)
   {
     var SubscribeTopicInfo = eventInfo.TopicName;
     PrincipalID = eventInfo.TopicSubscriber[2];
-    IpAddress = eventInfo.TopicSubscriber[3];
+    (eventInfo.TopicSubscriber[3]) ? (IpAddress = eventInfo.TopicSubscriber[3]) : (IpAddress = ' ');
     // Normally, if a topic is being written, then we
     // should consider the device to be Connected.
     // However in this case we are ONLY considering
@@ -167,7 +173,7 @@ function getAndPutConnection(eventInfo)
   {
     var PubInTopicInfo = eventInfo.TopicName;
     PrincipalID = eventInfo.TopicSubscriber[2];
-    IpAddress = eventInfo.TopicSubscriber[3];
+    (eventInfo.TopicSubscriber[3]) ? (IpAddress = eventInfo.TopicSubscriber[3]) : (IpAddress = ' ');
     // Normally, if a topic is being written, then we
     // should consider the device to be Connected.
     // However in this case we are ONLY considering
@@ -192,7 +198,7 @@ function getAndPutConnection(eventInfo)
   {
     var PubOutTopicInfo = eventInfo.TopicName;
     PrincipalID = eventInfo.TopicSubscriber[2];
-    IpAddress = eventInfo.TopicSubscriber[3];
+    (eventInfo.TopicSubscriber[3]) ? (IpAddress = eventInfo.TopicSubscriber[3]) : (IpAddress = ' ');
     // Normally, if a topic is being written, then we
     // should consider the device to be Connected.
     // However in this case we are ONLY considering
@@ -212,6 +218,58 @@ function getAndPutConnection(eventInfo)
       // 'LastConnDisconnTime': LastConnDisconn // Concatenating Date and Time
     }
   }
+
+/*
+  if (recordContents === 'PubIp')
+  {
+    PrincipalID = eventInfo.ConnInfo[2];
+    (eventInfo.ConnInfo[3]) ? (IpAddress = eventInfo.ConnInfo[3]) : (IpAddress = '');
+    console.log('IpAddress: ', eventInfo.ConnInfo[3]);
+    var Status = eventInfo.ConnInfo[5];
+    var LastConnDisconn = eventInfo.ConnInfo[0][0] + ' ' + eventInfo.ConnInfo[0][1];
+
+    dBaseGetParams.Key = { 'PrincipalID': PrincipalID };
+
+    dBasePutParams.Item =
+    {
+      'PrincipalID': PrincipalID,
+      'LastIpAddress': IpAddress,
+      'CurrentStatus': Status, //Connected or Disconnected
+      'LastConnDisconnTime': LastConnDisconn // Concatenating Date and Time
+      // 'TotalNumConnections': 0, // Placeholder
+      // 'TotalNumDisconnections': 0, // Placeholder
+      // 'PubInTopic': ' ', // Placeholder
+      // 'PubInTopicNumMsgs': 0, // Placeholder
+      // 'PubOutTopic': ' ', // Placeholder
+      // 'PubOutTopicNumMsgs': 0 // Placeholder
+    }
+  }
+
+  if (recordContents === 'SubscribeIp')
+  {
+    PrincipalID = eventInfo.ConnInfo[2];
+    (eventInfo.ConnInfo[3]) ? (IpAddress = eventInfo.ConnInfo[3]) : (IpAddress = '');
+    console.log('IpAddress: ', eventInfo.ConnInfo[3]);
+    var Status = eventInfo.ConnInfo[5];
+    var LastConnDisconn = eventInfo.ConnInfo[0][0] + ' ' + eventInfo.ConnInfo[0][1];
+
+    dBaseGetParams.Key = { 'PrincipalID': PrincipalID };
+
+    dBasePutParams.Item =
+    {
+      'PrincipalID': PrincipalID,
+      'LastIpAddress': IpAddress,
+      'CurrentStatus': Status, //Connected or Disconnected
+      'LastConnDisconnTime': LastConnDisconn // Concatenating Date and Time
+      // 'TotalNumConnections': 0, // Placeholder
+      // 'TotalNumDisconnections': 0, // Placeholder
+      // 'PubInTopic': ' ', // Placeholder
+      // 'PubInTopicNumMsgs': 0, // Placeholder
+      // 'PubOutTopic': ' ', // Placeholder
+      // 'PubOutTopicNumMsgs': 0 // Placeholder
+    }
+  }
+*/
 
   docClient.get(dBaseGetParams, (err, readRecord) =>
   {
@@ -244,8 +302,6 @@ function getAndPutConnection(eventInfo)
         // Even though it makes sense that a connection must exist for topics to be written / read
         // we are strictly updating TotalNumConnections only when explicitly receiving "Status Connect: SUCCESS".
         // This will simplify things when we read from CloudWatch
-
-        console.log('dBasePutParams: ', dBasePutParams);
 
         dBasePutParams.Item[SubscribeTopicInfo] = { 'Status': 'Subscribed' };
       }

@@ -18,8 +18,8 @@ module.exports.parseEvent = (eventStr, searchStrings, connInfoSearchPatterns, to
 
   // Check if eventStr contains either Connection or Disconnection searchString
   if(eventStr.indexOf(searchStrings.Connection) > -1)
-  {
-    connectionInfoPlusStatus = parseConnectionInfo(eventStr, connInfoSearchPatterns);
+    {
+      connectionInfoPlusStatus = parseConnectionInfo(eventStr, connInfoSearchPatterns);
       connectionInfoPlusStatus.push('Connected');
       // connectionInfoPlusStatus.push(++numConnections);
       // connectionInfoPlusStatus.push(numDisconnections);
@@ -33,7 +33,7 @@ module.exports.parseEvent = (eventStr, searchStrings, connInfoSearchPatterns, to
       // connectionInfoPlusStatus.push(++numDisconnections);
       infoFromEventStr = {Contents: 'ConnInfo', ConnInfo: connectionInfoPlusStatus};
     }
-    else if(eventStr.indexOf(searchStrings.PublishIn) > -1)
+    else if(eventStr.indexOf(searchStrings.PublishInTopic) > -1)
     {
       infoFromEventStr =
         {
@@ -42,7 +42,7 @@ module.exports.parseEvent = (eventStr, searchStrings, connInfoSearchPatterns, to
           TopicSubscriber: parseConnectionInfo(eventStr, connInfoSearchPatterns)
         };
     }
-    else if(eventStr.indexOf(searchStrings.Subscribe) > -1)
+    else if(eventStr.indexOf(searchStrings.SubscribeTopic) > -1)
     {
       infoFromEventStr =
         {
@@ -51,7 +51,7 @@ module.exports.parseEvent = (eventStr, searchStrings, connInfoSearchPatterns, to
           TopicSubscriber: parseConnectionInfo(eventStr, connInfoSearchPatterns)
         };
     }
-    else if(eventStr.indexOf(searchStrings.PublishOut) > -1)
+    else if(eventStr.indexOf(searchStrings.PublishOutTopic) > -1)
     {
       infoFromEventStr = {
         Contents: 'PubOutTopic',
@@ -59,6 +59,31 @@ module.exports.parseEvent = (eventStr, searchStrings, connInfoSearchPatterns, to
         TopicSubscriber: parseConnectionInfo(eventStr, connInfoSearchPatterns)
       };
     }
+    else if(eventStr.indexOf(searchStrings.PublishInIp) > -1)
+    {
+      connectionInfo = parseConnectionInfo(eventStr, connInfoSearchPatterns);
+      // connectionInfoPlusStatus.push('Disconnected');
+      // connectionInfoPlusStatus.push(numConnections);
+      // connectionInfoPlusStatus.push(++numDisconnections);
+      infoFromEventStr = { Contents: 'PubIp', ConnInfo: connectionInfo };
+    }
+    else if(eventStr.indexOf(searchStrings.PublishOutIp) > -1)
+    {
+      connectionInfo = parseConnectionInfo(eventStr, connInfoSearchPatterns);
+      // connectionInfoPlusStatus.push('Disconnected');
+      // connectionInfoPlusStatus.push(numConnections);
+      // connectionInfoPlusStatus.push(++numDisconnections);
+      infoFromEventStr = { Contents: 'PubIp', ConnInfo: connectionInfo };
+    }
+    else if(eventStr.indexOf(searchStrings.SubscribeIp) > -1)
+    {
+      connectionInfo = parseConnectionInfo(eventStr, connInfoSearchPatterns);
+      // connectionInfoPlusStatus.push('Disconnected');
+      // connectionInfoPlusStatus.push(numConnections);
+      // connectionInfoPlusStatus.push(++numDisconnections);
+      infoFromEventStr = { Contents: 'SubscribeIp', ConnInfo: connectionInfo };
+    }
+
   return infoFromEventStr;
 };
 
