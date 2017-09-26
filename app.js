@@ -32,6 +32,7 @@ var docClient = new aws.DynamoDB.DocumentClient({ service: dynamodb });
 
 var connInfoSearchPatterns = ['%s %s', 'PRINCIPALID:%s', 'IpAddress: %s ', 'SourcePort: %s'];
 var topicSearchPattern = 'TOPICNAME:%s ';
+var principalIdPattern = 'PRINCIPALID:%s';
 
 // var infoThisFile = []; // Clear array of Connections collected from last file
 // var logFiles = [];
@@ -51,7 +52,7 @@ zlib.gunzip(payload, (err, result) => {
     eventResult = JSON.parse(result.toString('ascii'));
     eventStr = eventResult.logEvents[0].message; // message is the part of the event JSON object that we want to parse
     // console.log('eventStr: ', eventStr);
-    eventInfo = utils.parseEvent(eventStr, searchStrings, connInfoSearchPatterns, topicSearchPattern);
+    eventInfo = utils.parseEvent(eventStr, searchStrings, connInfoSearchPatterns, topicSearchPattern, principalIdPattern);
     // console.log('eventInfo: ', eventInfo);
     getAndPutConnection(eventInfo);
   }
@@ -176,23 +177,23 @@ function getAndPutConnection(eventInfo)
   if (recordContents === 'SubscribeTopic')
   {
     var SubscribeTopicInfo = eventInfo.TopicName;
-    PrincipalID = eventInfo.TopicSubscriber[1];
-    IpAddress = eventInfo.TopicSubscriber[2];
+    PrincipalID = eventInfo.PrincipalID;
+    // IpAddress = eventInfo.TopicSubscriber[2];
     // Normally, if a topic is being written, then we
     // should consider the device to be Connected.
     // However in this case we are ONLY considering
     // a device conneted when the following is received:
     // "Connect Status: SUCCESS"
-    Status = eventInfo.TopicSubscriber[4];
+    // Status = eventInfo.TopicSubscriber[4];
     // LastConnDisconn = currentRecord.TopicSubscriber[0][0] + ' ' + currentRecord.TopicSubscriber[0][1];
 
     dBaseGetParams.Key = { 'PrincipalID': PrincipalID };
 
     dBasePutParams.Item =
     {
-      'PrincipalID': PrincipalID,
-      'LastIpAddress': IpAddress,
-      'CurrentStatus': Status //Connected or Disconnected
+      'PrincipalID': PrincipalID
+      // 'LastIpAddress': IpAddress,
+      // 'CurrentStatus': Status //Connected or Disconnected
       // 'LastConnDisconnTime': LastConnDisconn // Concatenating Date and Time
     }
   }
@@ -200,14 +201,14 @@ function getAndPutConnection(eventInfo)
   if (recordContents === 'PubInTopic')
   {
     var PubInTopicInfo = eventInfo.TopicName;
-    PrincipalID = eventInfo.TopicSubscriber[1];
-    IpAddress = eventInfo.TopicSubscriber[2];
+    PrincipalID = eventInfo.PrincipalID;
+    // IpAddress = eventInfo.TopicSubscriber[2];
     // Normally, if a topic is being written, then we
     // should consider the device to be Connected.
     // However in this case we are ONLY considering
     // a device conneted when the following is received:
     // "Connect Status: SUCCESS"
-    Status = eventInfo.TopicSubscriber[4];
+    // Status = eventInfo.TopicSubscriber[4];
     // LastConnDisconn = currentRecord.TopicSubscriber[0][0] + ' ' + currentRecord.TopicSubscriber[0][1];
     //PubInTopicInfo = `${PubInTopicName}`; // Use Template string to create field name rather than field value.
 
@@ -215,9 +216,9 @@ function getAndPutConnection(eventInfo)
 
     dBasePutParams.Item =
     {
-      'PrincipalID': PrincipalID,
-      'LastIpAddress': IpAddress,
-      'CurrentStatus': Status //Connected or Disconnected
+      'PrincipalID': PrincipalID
+      // 'LastIpAddress': IpAddress,
+      // 'CurrentStatus': Status //Connected or Disconnected
       // 'LastConnDisconnTime': LastConnDisconn // Concatenating Date and Time
     }
   }
@@ -225,14 +226,14 @@ function getAndPutConnection(eventInfo)
   if (recordContents === 'PubOutTopic')
   {
     var PubOutTopicInfo = eventInfo.TopicName;
-    PrincipalID = eventInfo.TopicSubscriber[1];
-    IpAddress = eventInfo.TopicSubscriber[2];
+    PrincipalID = eventInfo.PrincipalID;
+    // IpAddress = eventInfo.TopicSubscriber[2];
     // Normally, if a topic is being written, then we
     // should consider the device to be Connected.
     // However in this case we are ONLY considering
     // a device conneted when the following is received:
     // "Connect Status: SUCCESS"
-    Status = eventInfo.TopicSubscriber[4];
+    // Status = eventInfo.TopicSubscriber[4];
     // LastConnDisconn = currentRecord.TopicSubscriber[0][0] + ' ' + currentRecord.TopicSubscriber[0][1];
     //PubOutTopicInfo = `${PubOutTopicName}`; // Use Template string to create field name rather than field value.
 
@@ -240,9 +241,9 @@ function getAndPutConnection(eventInfo)
 
     dBasePutParams.Item =
     {
-      'PrincipalID': PrincipalID,
-      'LastIpAddress': IpAddress,
-      'CurrentStatus': Status //Connected or Disconnected
+      'PrincipalID': PrincipalID
+      // 'LastIpAddress': IpAddress,
+      // 'CurrentStatus': Status //Connected or Disconnected
       // 'LastConnDisconnTime': LastConnDisconn // Concatenating Date and Time
     }
   }

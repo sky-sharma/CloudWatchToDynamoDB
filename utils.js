@@ -5,7 +5,7 @@ var connectionInfo = []; //1D array of connection parameters
 var connectionInfoPlusStatus = []; //1D array of connection info. along with String indicating connection status
 var infoFromEventStr = {}; //Object of connection info.
 
-module.exports.parseEvent = (eventStr, searchStrings, connInfoSearchPatterns, topicSearchPattern) =>
+module.exports.parseEvent = (eventStr, searchStrings, connInfoSearchPatterns, topicSearchPattern, principalIdPattern) =>
 {
   // Receives a string from a Monitor Log file,looks for searchString,
   // and returns the items defined by searchPatterns.
@@ -39,7 +39,8 @@ module.exports.parseEvent = (eventStr, searchStrings, connInfoSearchPatterns, to
         {
           Contents: 'PubInTopic',
           TopicName: sscanf(eventStr, topicSearchPattern),
-          TopicSubscriber: parseConnectionInfo(eventStr, connInfoSearchPatterns)
+          PrincipalID: sscanf(eventStr, principalIdPattern)
+//          TopicSubscriber: parseConnectionInfo(eventStr, connInfoSearchPatterns)
         };
     }
     else if(eventStr.indexOf(searchStrings.SubscribeTopic) > -1)
@@ -48,15 +49,18 @@ module.exports.parseEvent = (eventStr, searchStrings, connInfoSearchPatterns, to
         {
           Contents: 'SubscribeTopic',
           TopicName: sscanf(eventStr, topicSearchPattern),
-          TopicSubscriber: parseConnectionInfo(eventStr, connInfoSearchPatterns)
+          PrincipalID: sscanf(eventStr, principalIdPattern)
+          // TopicSubscriber: parseConnectionInfo(eventStr, connInfoSearchPatterns)
         };
     }
     else if(eventStr.indexOf(searchStrings.PublishOutTopic) > -1)
     {
+      console.log('PubOutTopic!');
       infoFromEventStr = {
         Contents: 'PubOutTopic',
         TopicName: sscanf(eventStr, topicSearchPattern),
-        TopicSubscriber: parseConnectionInfo(eventStr, connInfoSearchPatterns)
+        PrincipalID: sscanf(eventStr, principalIdPattern)
+        // TopicSubscriber: parseConnectionInfo(eventStr, connInfoSearchPatterns)
       };
     }
     else if(eventStr.indexOf(searchStrings.PublishInIp) > -1)
@@ -70,6 +74,7 @@ module.exports.parseEvent = (eventStr, searchStrings, connInfoSearchPatterns, to
     }
     else if(eventStr.indexOf(searchStrings.PublishOutIp) > -1)
     {
+      console.log('PublishOutIp!');
       connectionInfo = parseConnectionInfo(eventStr, connInfoSearchPatterns);
       // connectionInfoPlusStatus.push('Disconnected');
       // connectionInfoPlusStatus.push(numConnections);
