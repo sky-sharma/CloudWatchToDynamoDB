@@ -50,11 +50,14 @@ zlib.gunzip(payload, (err, result) => {
   else
   {
     eventResult = JSON.parse(result.toString('ascii'));
-    eventStr = eventResult.logEvents[0].message; // message is the part of the event JSON object that we want to parse
-    // console.log('eventStr: ', eventStr);
-    eventInfo = utils.parseEvent(eventStr, searchStrings, connInfoSearchPatterns, topicSearchPattern, principalIdPattern);
-    // console.log('eventInfo: ', eventInfo);
-    getAndPutConnection(eventInfo);
+    eventResult.logEvents.forEach((logEvent) =>
+    {
+      eventStr = logEvent.message; // message is the part of the event JSON object that we want to parse
+      // console.log('eventStr: ', eventStr);
+      eventInfo = utils.parseEvent(eventStr, searchStrings, connInfoSearchPatterns, topicSearchPattern, principalIdPattern);
+      // console.log('eventInfo: ', eventInfo);
+      getAndPutConnection(eventInfo);
+    });
   }
 })
 
